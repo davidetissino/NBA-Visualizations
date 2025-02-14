@@ -1,0 +1,85 @@
+---
+title: "R Markdown Trial"
+author: "Davide Tissino"
+date: "2025-02-12"
+output: html_document
+---
+
+
+Initial Setup: 
+
+<!-- need one line of space otherwise does not create list -->
+- use include = F to prevent code AND result from appearing
+- use echo = F to prevent code BUT not result from appearing
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(include = TRUE)   # allows code and result 
+```
+
+### Starting Out
+
+The purpose of this document is to contain 
+
+```{r, include = FALSE}
+# Required Libraries
+library(httr)
+library(jsonlite)
+library(knitr)
+
+# Load headers to scrape 
+headers <- c(
+  `Connection` = 'keep-alive',
+  `Accept` = 'application/json, text/plain, */*',
+  `x-nba-stats-token` = 'true',
+  `X-NewRelic-ID` = 'VQECWF5UChAHUlNTBwgBVw==',
+  `User-Agent` = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_14_6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/78.0.3904.87 Safari/537.36',
+  `x-nba-stats-origin` = 'stats',
+  `Sec-Fetch-Site` = 'same-origin',
+  `Sec-Fetch-Mode` = 'cors',
+  `Referer` = 'https://stats.nba.com/players/shooting/',
+  `Accept-Encoding` = 'gzip, deflate, br',
+  `Accept-Language` = 'en-US,en;q=0.9'
+)
+
+```
+
+Now it is sufficient to create a simple function to scrape all NBA players' boxscores for a specific Regular Season. The function will look like the following: 
+
+```{r scrape}
+
+# function returning ALL individual gamelogs for the season
+gamelogs <- function(season) {
+  
+  url <- paste0('https://stats.nba.com/stats/leaguegamelog?Counter=1000&DateFrom=&DateTo=&Direction=DESC&ISTRound=&LeagueID=00&PlayerOrTeam=P&Season=', 
+                season, '&SeasonType=Regular%20Season&Sorter=DATE')
+  
+  res <- GET(url = url, add_headers(.headers = headers))
+  resp <- fromJSON(content(res, 'text'))
+  
+  logs <- data.frame(resp$resultSets$rowSet)
+  colnames(logs) <- resp[['resultSets']][['headers']][[1]]
+  
+  return(logs)
+  }
+```
+
+Having developed a function to scrape all box-scores for a specific Season, it is sufficient to call the function for our Regular Season of interest, which in this case is the 2024-25 NBA Regular Season. Note that when referencing a specific RS, we will call the function as year - 1:
+
+```{r logs, include = T}
+# to call the function for RS 2024-25:
+logs23 <- gamelogs(2024)
+```
+
+Which will look something like this (reduced the dataframe to only some rows and columns for reference): 
+
+```{r table, results = 'asis', echo = F}
+kable(logs23[c(1:5), c(3, 5, 8:10)], 
+      caption = 'Resulting Knitr Table')
+```
+
+
+
+
+
+
+
